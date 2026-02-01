@@ -74,14 +74,8 @@
       font-size: 0.9rem;
     }
     
-    #checkout-form .col-auto {
-      width: 100%;
-    }
-    
     #checkout-form button {
-      width: 100%;
-      margin-top: 0.5rem;
-      height: 45px;
+      min-height: 45px;
     }
     
     .list-group-item {
@@ -146,16 +140,14 @@
         </button>
       </div>
       <div class="card-body">
-        <form id="checkout-form" class="row g-3 align-items-end">
+        <form id="checkout-form">
           <input type="hidden" id="event-id" name="event_id" value="{{ current_event_id }}">
-          <div class="col-auto col-md-8" style="flex: 1;">
-            <label class="form-label fw-bold">Search by Name or Last 4 Digits of Phone</label>
-            <input id="search-input" class="form-control" placeholder="Enter child's name or phone (last 4)" />
-            <small class="text-muted">Search for checked-in children to check them out</small>
+          <label class="form-label fw-bold" for="search-input">Search by Name or Last 4 Digits of Phone</label>
+          <div class="d-flex flex-nowrap gap-2 align-items-center mb-1">
+            <input id="search-input" class="form-control flex-grow-1" placeholder="Enter child's name or phone (last 4)" />
+            <button type="submit" class="btn flex-shrink-0" style="background-color: {{ branding.accent_color }}; color: white; border: none; padding: 0.5rem 1.5rem;">Search</button>
           </div>
-          <div class="col-auto col-md-4">
-            <button type="submit" class="btn" style="background-color: {{ branding.accent_color }}; color: white; border: none; padding: 0.5rem 2rem;">Search</button>
-          </div>
+          <small class="text-muted">Search for checked-in children to check them out</small>
         </form>
       </div>
     </div>

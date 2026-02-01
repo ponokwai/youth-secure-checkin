@@ -74,14 +74,8 @@
       font-size: 0.9rem;
     }
     
-    #checkin-form .col-auto {
-      width: 100%;
-    }
-    
     #checkin-form button {
-      width: 100%;
-      margin-top: 0.5rem;
-      height: 45px;
+      min-height: 45px;
     }
     
     .list-group-item {
@@ -130,16 +124,14 @@
         </button>
       </div>
       <div class="card-body">
-        <form id="checkin-form" class="row g-3 align-items-end">
+        <form id="checkin-form">
           <input type="hidden" id="event-id" name="event_id" value="{{ current_event_id }}">
-          <div class="col-auto col-md-8" style="flex: 1;">
-            <label class="form-label fw-bold">Search by Last 4 Digits of Phone or Name</label>
-            <input id="search-input" class="form-control" placeholder="Enter phone (last 4) or name (partial)" />
-            <small class="text-muted">Enter 4 digits for phone lookup or any text for name search</small>
+          <label class="form-label fw-bold" for="search-input">Search by Last 4 Digits of Phone or Name</label>
+          <div class="d-flex flex-nowrap gap-2 align-items-center mb-1">
+            <input id="search-input" class="form-control flex-grow-1" placeholder="Enter phone (last 4) or name (partial)" />
+            <button type="submit" class="btn flex-shrink-0" style="background-color: {{ branding.primary_color }}; color: white; border: none; padding: 0.5rem 1.5rem;">Search</button>
           </div>
-          <div class="col-auto col-md-4">
-            <button type="submit" class="btn" style="background-color: {{ branding.primary_color }}; color: white; border: none; padding: 0.5rem 2rem;">Search</button>
-          </div>
+          <small class="text-muted">Enter 4 digits for phone lookup or any text for name search</small>
         </form>
       </div>
     </div>
