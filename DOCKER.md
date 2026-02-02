@@ -19,7 +19,7 @@ mkdir youth-checkin && cd youth-checkin
 mkdir -p data uploads
 
 # Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/docker-compose.yml
 
 # Create .env file with your secrets
 cat > .env << EOF
@@ -40,7 +40,7 @@ docker compose logs -f
 
 ```bash
 # Clone repository
-git clone https://github.com/mrcrunchybeans/youth-secure-checkin.git
+git clone https://github.com/ponokwai/youth-secure-checkin.git
 cd youth-secure-checkin
 
 # Start with docker compose (uses profile)
@@ -66,10 +66,10 @@ Want to try it with sample data first?
 
 ```bash
 # Pull demo image
-docker pull mrcrunchybeans/youth-secure-checkin:demo
+docker pull ponokwai/youth-secure-checkin:demo
 
 # Download demo compose file
-curl -O https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/docker-compose.demo.yml
+curl -O https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/docker-compose.demo.yml
 
 # Run demo with pre-loaded data
 docker compose -f docker-compose.demo.yml up -d
@@ -380,7 +380,7 @@ docker compose up -d
 
 ```bash
 # Test Docker Hub connection
-docker pull mrcrunchybeans/youth-secure-checkin:latest
+docker pull ponokwai/youth-secure-checkin:latest
 
 # Login if needed (for private images)
 docker login
@@ -493,7 +493,7 @@ mkdir -p ~/tx-1932 && cd ~/tx-1932
 mkdir -p data uploads
 
 # Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/docker-compose.yml
 
 # Create unique .env file
 cat > .env << EOF
@@ -515,7 +515,7 @@ docker compose up -d
 # docker-compose.tx1932.yml
 services:
   web:
-    image: mrcrunchybeans/youth-secure-checkin:latest
+    image: ponokwai/youth-secure-checkin:latest
     container_name: youth-checkin-tx1932
     ports:
       - "5001:5000"
@@ -543,7 +543,7 @@ ssh root@your-vps-ip
 mkdir -p ~/youth-checkin && cd ~/youth-checkin
 mkdir -p data uploads
 
-curl -O https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/docker-compose.yml
 
 cat > .env << EOF
 SECRET_KEY=$(openssl rand -hex 32)
@@ -672,14 +672,14 @@ Create `/etc/logrotate.d/docker-youth-checkin`:
 
 ```bash
 # Pull image
-docker pull mrcrunchybeans/youth-secure-checkin:latest
-docker pull mrcrunchybeans/youth-secure-checkin:demo
+docker pull ponokwai/youth-secure-checkin:latest
+docker pull ponokwai/youth-secure-checkin:demo
 
 # List images
 docker images
 
 # Remove image
-docker rmi mrcrunchybeans/youth-secure-checkin:latest
+docker rmi ponokwai/youth-secure-checkin:latest
 
 # Build from Dockerfile
 docker build -t youth-checkin .
@@ -783,7 +783,7 @@ Change host port in docker-compose.yml: `"<host-port>:5000"`
 - **Application Guide**: See `README.md` for features and usage
 - **Deployment Guide**: See `DEPLOYMENT_CHECKLIST.md` for hosting platforms  
 - **Security Guide**: See `SECURITY.md` for best practices
-- **Issues**: [GitHub Issues](https://github.com/mrcrunchybeans/youth-secure-checkin/issues)
+- **Issues**: [GitHub Issues](https://github.com/ponokwai/youth-secure-checkin/issues)
 - **Docker Docs**: [docs.docker.com](https://docs.docker.com/)
 - **Docker Compose**: [docs.docker.com/compose](https://docs.docker.com/compose/)
 

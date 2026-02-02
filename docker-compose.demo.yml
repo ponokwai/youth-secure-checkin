@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Demo web application
   demo-app:
-    image: mrcrunchybeans/youth-secure-checkin:demo
+    image: ponokwai/youth-secure-checkin:demo
     container_name: youth-checkin-demo
     ports:
       - "5000:5000"
@@ -35,7 +35,7 @@ services:
 
   # Auto-reset service - resets demo data periodically
   demo-reset:
-    image: mrcrunchybeans/youth-secure-checkin:demo
+    image: ponokwai/youth-secure-checkin:demo
     container_name: youth-checkin-demo-reset
     environment:
       DATABASE_PATH: /app/data/demo.db

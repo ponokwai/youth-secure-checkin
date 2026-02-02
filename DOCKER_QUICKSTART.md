@@ -10,7 +10,7 @@ mkdir youth-checkin && cd youth-checkin
 mkdir -p data uploads
 
 # Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/docker-compose.yml
 
 # Create .env file with your secrets
 echo "SECRET_KEY=$(openssl rand -hex 32)" > .env

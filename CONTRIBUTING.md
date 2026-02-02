@@ -51,7 +51,7 @@ Ready to code? Great! See below for development setup.
 
 3. **Add upstream remote**:
    ```bash
-   git remote add upstream https://github.com/mrcrunchybeans/youth-secure-checkin.git
+   git remote add upstream https://github.com/ponokwai/youth-secure-checkin.git
    ```
 
 ### Option 1: Docker Development (Recommended)
@@ -330,8 +330,8 @@ Contributors are recognized in:
 
 ## 📞 Questions?
 
-- **General Questions**: [GitHub Discussions](https://github.com/mrcrunchybeans/youth-secure-checkin/discussions)
-- **Bug Reports**: [GitHub Issues](https://github.com/mrcrunchybeans/youth-secure-checkin/issues)
+- **General Questions**: [GitHub Discussions](https://github.com/ponokwai/youth-secure-checkin/discussions)
+- **Bug Reports**: [GitHub Issues](https://github.com/ponokwai/youth-secure-checkin/issues)
 - **Security**: See [SECURITY.md](SECURITY.md)
 - **Docker Help**: See [DOCKER.md](DOCKER.md)
 - **Deployment**: See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)

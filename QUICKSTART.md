@@ -5,7 +5,7 @@
 ### Production Setup
 ```bash
 # 1. Clone repository
-git clone https://github.com/mrcrunchybeans/youth-secure-checkin.git
+git clone https://github.com/ponokwai/youth-secure-checkin.git
 cd youth-secure-checkin
 
 # 2. Create environment file
@@ -150,7 +150,7 @@ docker compose -f docker-compose.demo.yml up -d
 docker compose down -v
 
 # Remove images
-docker rmi mrcrunchybeans/youth-secure-checkin:latest
+docker rmi ponokwai/youth-secure-checkin:latest
 docker rmi yourls:latest
 docker rmi mysql:8.0
 
@@ -180,7 +180,7 @@ rm -rf data/ uploads/
 
 ## Support
 
-- GitHub Issues: https://github.com/mrcrunchybeans/youth-secure-checkin/issues
+- GitHub Issues: https://github.com/ponokwai/youth-secure-checkin/issues
 - YOURLS Docs: https://docs.yourls.org/
 - Docker Docs: https://docs.docker.com/
 
