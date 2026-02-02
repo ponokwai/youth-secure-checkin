@@ -4140,7 +4140,7 @@ if __name__ == '__main__':
     
     # Get configuration from environment variables
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    port = int(os.getenv('PORT', 5001))
+    port = int(os.getenv('PORT', 5000))
     host = os.getenv('HOST', '0.0.0.0')
     
     # Start the Flask development server
