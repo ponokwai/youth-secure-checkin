@@ -40,7 +40,7 @@ class BackupManager:
             backup_dir: Directory to store backups
             uploads_dir: Path to uploads directory (if exists)
             static_uploads_dir: Path to static/uploads directory (if exists)
-            timezone: pytz timezone object or None for system local time
+            timezone: Timezone object (e.g., ZoneInfo or pytz timezone) or None for system local time
             encryption_password: Password for AES-256 encryption (None = no encryption)
         """
         self.db_path = Path(db_path)
@@ -55,7 +55,7 @@ class BackupManager:
     
     def _get_local_now(self):
         """Get current time in configured timezone"""
-        if self.timezone and pytz:
+        if self.timezone:
             return datetime.now(self.timezone)
         return datetime.now()
     
@@ -216,7 +216,7 @@ class BackupManager:
             try:
                 stat = backup_file.stat()
                 # Convert file mtime to timezone-aware datetime if we have a timezone
-                if self.timezone and pytz:
+                if self.timezone:
                     created_time = datetime.fromtimestamp(stat.st_mtime, tz=self.timezone)
                     age_days = (local_now - created_time).days
                 else:

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 import requests
 
 # Application version
@@ -10,7 +11,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.connection import create_connection
 import urllib3
 from icalendar import Calendar
-import pytz
 import csv
 import io
 import json
@@ -242,17 +242,58 @@ def inject_version():
 
 # Get timezone from database, default to America/Chicago
 def get_timezone():
+    """Get the configured timezone as a ZoneInfo object."""
     try:
         conn = get_db()
         row = conn.execute("SELECT value FROM settings WHERE key = 'timezone'").fetchone()
         conn.close()
         if row:
-            return pytz.timezone(row[0])
+            try:
+                return ZoneInfo(row[0])
+            except Exception as e:
+                app.logger.warning(f"Invalid timezone '{row[0]}' in settings: {e}")
     except:
         pass
-    return pytz.timezone('America/Chicago')
+    return ZoneInfo('America/Chicago')
 
-local_tz = get_timezone()
+def get_timezone_name():
+    """Get the configured timezone name (IANA string) for template selection."""
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT value FROM settings WHERE key = 'timezone'").fetchone()
+        conn.close()
+        if row:
+            return row[0]
+    except:
+        pass
+    return 'America/Chicago'
+
+def local_date_to_utc_range(date_str, tz):
+    """
+    Convert a local date string (YYYY-MM-DD) to UTC start and end ISO strings.
+    
+    Args:
+        date_str: Date string in YYYY-MM-DD format
+        tz: ZoneInfo timezone object
+    
+    Returns:
+        Tuple of (utc_start_iso, utc_end_iso) for filtering
+    """
+    try:
+        # Parse the date and create start of day (00:00:00) and end of day (23:59:59.999999) in local timezone
+        naive_date = datetime.strptime(date_str, '%Y-%m-%d')
+        local_start = datetime(naive_date.year, naive_date.month, naive_date.day, 0, 0, 0, tzinfo=tz)
+        local_end = datetime(naive_date.year, naive_date.month, naive_date.day, 23, 59, 59, 999999, tzinfo=tz)
+        
+        # Convert to UTC
+        utc_start = local_start.astimezone(timezone.utc)
+        utc_end = local_end.astimezone(timezone.utc)
+        
+        return utc_start.isoformat(), utc_end.isoformat()
+    except Exception as e:
+        app.logger.warning(f"Error converting date '{date_str}' to UTC range: {e}")
+        # Return values that won't filter anything on error
+        return None, None
 
 # Developer password from environment variable for security
 # Falls back to None if not set (disables developer override features)
@@ -631,7 +672,7 @@ def create_qr_code(url):
 def cleanup_expired_tokens():
     """Remove expired share tokens from database"""
     conn = get_db()
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     conn.execute("DELETE FROM share_tokens WHERE expires_at < ? OR used = 1", (now,))
     conn.commit()
     conn.close()
@@ -696,19 +737,20 @@ def sync_ical_events():
                     end_dt = component.get('dtend')
                     start_time = None
                     end_time = None
+                    tz = get_timezone()
                     if start_dt:
                         dt = start_dt.dt
                         if hasattr(dt, 'tzinfo') and dt.tzinfo:
-                            dt = dt.astimezone(local_tz)
+                            dt = dt.astimezone(tz)
                         else:
-                            dt = local_tz.localize(dt)
+                            dt = dt.replace(tzinfo=tz)
                         start_time = dt.isoformat()
                     if end_dt:
                         dt = end_dt.dt
                         if hasattr(dt, 'tzinfo') and dt.tzinfo:
-                            dt = dt.astimezone(local_tz)
+                            dt = dt.astimezone(tz)
                         else:
-                            dt = local_tz.localize(dt)
+                            dt = dt.replace(tzinfo=tz)
                         end_time = dt.isoformat()
                     description = str(component.get('description', ''))
                     
@@ -748,7 +790,7 @@ def sync_ical_events():
 
             # Update last sync time
             conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('last_ical_sync', ?)",
-                        (datetime.utcnow().isoformat(),))
+                        (datetime.now(timezone.utc).isoformat(),))
             conn.commit()
             conn.close()
             return True, f"Synced {event_count} events"
@@ -922,7 +964,7 @@ def index():
     # Convert to dicts and format times
     checked_in = [dict(r) for r in checked_in]
     for checkin in checked_in:
-        dt = datetime.fromisoformat(checkin['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        dt = datetime.fromisoformat(checkin['checkin_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
         checkin['formatted_time'] = dt.strftime('%b %d %I:%M %p')
 
     months = get_event_date_range_months()
@@ -1213,7 +1255,7 @@ def checkout_page():
     # Convert to list of dicts and format times
     children = []
     for row in checked_in_children:
-        dt = datetime.fromisoformat(row['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        dt = datetime.fromisoformat(row['checkin_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
         formatted_time = dt.strftime('%b %d %I:%M %p')
         
         children.append({
@@ -1310,7 +1352,7 @@ def search_checked_in():
     # Convert to list of dicts and format times
     children = []
     for row in results:
-        dt = datetime.fromisoformat(row['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        dt = datetime.fromisoformat(row['checkin_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
         formatted_time = dt.strftime('%b %d %I:%M %p')
         
         children.append({
@@ -1335,7 +1377,7 @@ def search_checked_in():
 def admin_backup_db():
     """Create and return a zip containing the database and uploads/data directories (if present)."""
     # Use in-memory zip if small, otherwise temporary file
-    timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+    timestamp = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
     tmpdir = tempfile.mkdtemp(prefix='youth_checkin_backup_')
     zip_path = Path(tmpdir) / f'youth-secure-checkin-backup-{timestamp}.zip'
 
@@ -1423,7 +1465,7 @@ def admin_restore_db():
         
         # Backup current database before replacing
         app_root = Path(__file__).parent
-        current_backup_name = f'checkin-before-restore-{datetime.utcnow().strftime("%Y%m%d%H%M%S")}.db'
+        current_backup_name = f'checkin-before-restore-{datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")}.db'
         if DB_PATH.exists():
             shutil.copy2(str(DB_PATH), str(app_root / current_backup_name))
         
@@ -1487,7 +1529,7 @@ def checkin_selected():
     if not family_id or not adult_id or not kid_ids or not event_id:
         return jsonify({'success': False, 'message': 'Missing data'}), 400
     conn = get_db()
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     
     # Check if checkout codes are enabled and get method
     require_codes_setting = conn.execute("SELECT value FROM settings WHERE key = 'require_checkout_code'").fetchone()
@@ -1567,11 +1609,11 @@ def checkin_selected():
         kid_name = kid_row['name'] if kid_row else "Unknown"
         kid_notes = kid_row['notes'] if kid_row else ''
         
-        # Convert UTC to CST for display
-        utc_time = datetime.fromisoformat(now).replace(tzinfo=pytz.UTC)
-        cst_time = utc_time.astimezone(pytz.timezone('America/Chicago'))
-        checkin_time = cst_time.strftime('%I:%M %p')
-        formatted_time = cst_time.strftime('%b %d %I:%M %p')
+        # Convert UTC to configured timezone for display
+        utc_time = datetime.fromisoformat(now).replace(tzinfo=timezone.utc)
+        local_time = utc_time.astimezone(get_timezone())
+        checkin_time = local_time.strftime('%I:%M %p')
+        formatted_time = local_time.strftime('%b %d %I:%M %p')
         
         # Add to checked-in data for UI update
         checked_in_data.append({
@@ -1594,10 +1636,10 @@ def checkin_selected():
             # Combine all kid names for the label (comma separated)
             combined_names = ', '.join(kid_names_for_label)
             
-            # Convert UTC to CST for display
-            utc_time = datetime.fromisoformat(now).replace(tzinfo=pytz.UTC)
-            cst_time = utc_time.astimezone(pytz.timezone('America/Chicago'))
-            checkin_time = cst_time.strftime('%I:%M %p')
+            # Convert UTC to configured timezone for display
+            utc_time = datetime.fromisoformat(now).replace(tzinfo=timezone.utc)
+            local_time = utc_time.astimezone(get_timezone())
+            checkin_time = local_time.strftime('%I:%M %p')
             
             # Add single label with all names
             labels_to_print.append({
@@ -1618,7 +1660,7 @@ def checkin_selected():
     short_url = None
     if require_codes and checkout_method in ['qr', 'both'] and checked_in_data and len(checked_in_data) > 0 and any(c['id'] for c in checked_in_data):
         share_token = generate_share_token()
-        expires_at = (datetime.utcnow() + timedelta(hours=24)).isoformat()
+        expires_at = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
         checkin_ids = ','.join([str(c['id']) for c in checked_in_data])
         
         conn.execute("""
@@ -1691,7 +1733,7 @@ def checkout(kid_id):
                 return jsonify({'success': False, 'message': 'Invalid checkout code', 'code_required': True}), 403
     
     # Perform checkout for all selected kids
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     checked_out_count = 0
     checkin_ids = []
     
@@ -1796,7 +1838,7 @@ def share_codes(token):
         FROM share_tokens st
         JOIN events e ON e.id = st.event_id
         WHERE st.token = ? AND st.used = 0 AND st.expires_at > ?
-    """, (token, datetime.utcnow().isoformat())).fetchone()
+    """, (token, datetime.now(timezone.utc).isoformat())).fetchone()
     
     if not token_data:
         conn.close()
@@ -1823,8 +1865,8 @@ def share_codes(token):
             if not family_code:
                 family_code = checkin['checkout_code']
                 # Convert UTC to local time
-                utc_time = datetime.fromisoformat(checkin['checkin_time']).replace(tzinfo=pytz.UTC)
-                checkin_time = utc_time.astimezone(local_tz).strftime('%I:%M %p')
+                utc_time = datetime.fromisoformat(checkin['checkin_time']).replace(tzinfo=timezone.utc)
+                checkin_time = utc_time.astimezone(get_timezone()).strftime('%I:%M %p')
             
             kids.append({
                 'name': checkin['kid_name'],
@@ -1840,7 +1882,7 @@ def share_codes(token):
         return render_template('share_expired.html'), 404
     
     # Format event time
-    event_time = datetime.fromisoformat(token_data['start_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+    event_time = datetime.fromisoformat(token_data['start_time']).astimezone(get_timezone())
     
     logo_filename = get_logo_filename()
     
@@ -1892,7 +1934,7 @@ def kiosk():
     events = cur2.fetchall()
     current_event = next((e for e in events if e['id'] == int(event_id)), None)
     if current_event:
-        dt = datetime.fromisoformat(current_event['start_time']).astimezone(local_tz)
+        dt = datetime.fromisoformat(current_event['start_time']).astimezone(get_timezone())
         current_event_name = current_event['name']
         current_event_date = dt.strftime('%b %d, %Y')
     else:
@@ -1905,10 +1947,10 @@ def kiosk():
 
     # Format times for display
     for c in checked_in:
-        dt = datetime.fromisoformat(c['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        dt = datetime.fromisoformat(c['checkin_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
         c['formatted_time'] = dt.strftime('%b %d %I:%M %p')
     for e in events:
-        dt = datetime.fromisoformat(e['start_time']).astimezone(local_tz)
+        dt = datetime.fromisoformat(e['start_time']).astimezone(get_timezone())
         e['formatted_start'] = dt.strftime('%b %d, %Y %I:%M %p')
 
     logo_filename = get_logo_filename()
@@ -1946,13 +1988,19 @@ def history():
         query += " AND c.event_id = ?"
         params.append(event_id)
 
+    # Convert local dates to UTC ranges for proper filtering
+    tz = get_timezone()
     if start_date:
-        query += " AND date(c.checkin_time) >= ?"
-        params.append(start_date)
+        utc_start, _ = local_date_to_utc_range(start_date, tz)
+        if utc_start:
+            query += " AND c.checkin_time >= ?"
+            params.append(utc_start)
 
     if end_date:
-        query += " AND date(c.checkin_time) <= ?"
-        params.append(end_date)
+        _, utc_end = local_date_to_utc_range(end_date, tz)
+        if utc_end:
+            query += " AND c.checkin_time <= ?"
+            params.append(utc_end)
 
     query += " ORDER BY c.checkin_time DESC LIMIT 200"
 
@@ -1962,10 +2010,10 @@ def history():
     # Convert to dicts and format times
     rows = [dict(r) for r in rows]
     for r in rows:
-        dt = datetime.fromisoformat(r['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        dt = datetime.fromisoformat(r['checkin_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
         r['formatted_checkin'] = dt.strftime('%b %d, %Y %I:%M %p')
         if r['checkout_time']:
-            dt = datetime.fromisoformat(r['checkout_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+            dt = datetime.fromisoformat(r['checkout_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
             r['formatted_checkout'] = dt.strftime('%b %d, %Y %I:%M %p')
         else:
             r['formatted_checkout'] = ''
@@ -2006,13 +2054,19 @@ def email_history():
             query += " AND c.event_id = ?"
             params.append(event_id)
         
+        # Convert local dates to UTC ranges for proper filtering
+        tz = get_timezone()
         if start_date:
-            query += " AND date(c.checkin_time) >= ?"
-            params.append(start_date)
+            utc_start, _ = local_date_to_utc_range(start_date, tz)
+            if utc_start:
+                query += " AND c.checkin_time >= ?"
+                params.append(utc_start)
         
         if end_date:
-            query += " AND date(c.checkin_time) <= ?"
-            params.append(end_date)
+            _, utc_end = local_date_to_utc_range(end_date, tz)
+            if utc_end:
+                query += " AND c.checkin_time <= ?"
+                params.append(utc_end)
         
         query += " ORDER BY c.checkin_time DESC"
         
@@ -2023,12 +2077,12 @@ def email_history():
         # Format times and build HTML table
         html_rows = []
         for r in rows:
-            dt = datetime.fromisoformat(r['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+            dt = datetime.fromisoformat(r['checkin_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
             checkin_time = dt.strftime('%b %d, %Y %I:%M %p')
             
             checkout_time = ''
             if r['checkout_time']:
-                dt = datetime.fromisoformat(r['checkout_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+                dt = datetime.fromisoformat(r['checkout_time']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
                 checkout_time = dt.strftime('%b %d, %Y %I:%M %p')
             
             html_rows.append({
@@ -2150,7 +2204,7 @@ def admin_events():
     last_sync = ''
     if last_sync_row and last_sync_row['value']:
         try:
-            dt = datetime.fromisoformat(last_sync_row['value']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+            dt = datetime.fromisoformat(last_sync_row['value']).replace(tzinfo=timezone.utc).astimezone(get_timezone())
             last_sync = dt.strftime('%b %d, %Y %I:%M %p')
         except:
             last_sync = last_sync_row['value']
@@ -3292,8 +3346,8 @@ def admin_branding():
             flash('Branding settings updated successfully', 'success')
             return redirect(url_for('admin_branding'))
     
-    # Get current timezone for the dropdown
-    current_timezone = str(get_timezone())
+    # Get current timezone name for the dropdown
+    current_timezone = get_timezone_name()
     
     conn.close()
     return render_template('admin/branding.html', branding=get_branding_settings(), current_timezone=current_timezone)
@@ -3630,10 +3684,10 @@ def admin_tlc_sync_confirm(event_id):
     # Get checkins for the specific date of the event
     # Also fetch tlc_synced status
     # Convert UTC checkin_time to local timezone before comparing dates
-    # Get timezone offset for the target date (need to localize the datetime for pytz)
+    # Get timezone offset for the target date
     tz = get_timezone()
     naive_dt = datetime.strptime(target_date_str, '%Y-%m-%d')
-    localized_dt = tz.localize(naive_dt)
+    localized_dt = naive_dt.replace(tzinfo=tz)
     tz_offset_hours = localized_dt.utcoffset().total_seconds() / 3600
     tz_offset_str = f"{tz_offset_hours:+.0f} hours"
     
@@ -3844,7 +3898,7 @@ def admin_tlc_sync_execute(event_id):
                         # Convert UTC checkin_time to local timezone before comparing dates
                         tz = get_timezone()
                         naive_dt = datetime.strptime(target_date_str, '%Y-%m-%d')
-                        localized_dt = tz.localize(naive_dt)
+                        localized_dt = naive_dt.replace(tzinfo=tz)
                         tz_offset_hours = localized_dt.utcoffset().total_seconds() / 3600
                         tz_offset_str = f"{tz_offset_hours:+.0f} hours"
                         conn.execute('''
