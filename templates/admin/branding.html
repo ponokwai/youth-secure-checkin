@@ -277,6 +277,12 @@
                     <option value="America/Anchorage" {% if current_timezone == 'America/Anchorage' %}selected{% endif %}>Alaska Time (AKT)</option>
                     <option value="Pacific/Honolulu" {% if current_timezone == 'Pacific/Honolulu' %}selected{% endif %}>Hawaii Time (HST)</option>
                   </optgroup>
+                  <optgroup label="African Time Zones">
+                    <option value="Africa/Lagos" {% if current_timezone == 'Africa/Lagos' %}selected{% endif %}>Lagos (WAT - UTC+01:00)</option>
+                    <option value="Africa/Nairobi" {% if current_timezone == 'Africa/Nairobi' %}selected{% endif %}>Nairobi (EAT - UTC+03:00)</option>
+                    <option value="Africa/Johannesburg" {% if current_timezone == 'Africa/Johannesburg' %}selected{% endif %}>Johannesburg (SAST - UTC+02:00)</option>
+                    <option value="Africa/Cairo" {% if current_timezone == 'Africa/Cairo' %}selected{% endif %}>Cairo (EET - UTC+02:00)</option>
+                  </optgroup>
                   <optgroup label="Other Common Time Zones">
                     <option value="UTC" {% if current_timezone == 'UTC' %}selected{% endif %}>UTC (Coordinated Universal Time)</option>
                     <option value="Europe/London" {% if current_timezone == 'Europe/London' %}selected{% endif %}>London (GMT/BST)</option>

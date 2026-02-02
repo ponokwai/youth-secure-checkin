@@ -130,6 +130,14 @@ For development or custom deployments:
    # Open http://localhost:5000
    ```
 
+   or
+   ```
+   # Activate virtual environment (in your terminal)
+   source .venv/bin/activate
+   # Run the app
+   gunicorn --bind 127.0.0.1:5000 --workers 1 --timeout 120 wsgi:app
+   ```
+
 Complete first-time setup wizard, then start checking in families!
 
 ## 📖 Documentation
