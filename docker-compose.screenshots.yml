@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Screenshot/Marketing web application
   screenshot-app:
-    image: mrcrunchybeans/youth-secure-checkin:demo
+    image: ponokwai/youth-secure-checkin:demo
     container_name: youth-checkin-screenshots
     ports:
       - "5000:5000"
@@ -32,13 +32,13 @@ services:
       retries: 3
       start_period: 40s
     command: >
-      sh -c "wget -O screenshot_seed.py https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/screenshot_seed.py &&
+      sh -c "wget -O screenshot_seed.py https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/screenshot_seed.py &&
              python screenshot_seed.py &&
              gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 wsgi:app"
 
   # Auto-reset service - resets data periodically to keep dates fresh
   screenshot-reset:
-    image: mrcrunchybeans/youth-secure-checkin:demo
+    image: ponokwai/youth-secure-checkin:demo
     container_name: youth-checkin-screenshots-reset
     environment:
       DATABASE_PATH: /app/data/screenshots.db
@@ -48,8 +48,8 @@ services:
       - screenshots-data:/app/data
       - screenshots-uploads:/app/static/uploads
     command: >
-      sh -c "wget -O screenshot_seed.py https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/screenshot_seed.py &&
-             wget -O screenshot_reset_scheduler.py https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/screenshot_reset_scheduler.py &&
+      sh -c "wget -O screenshot_seed.py https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/screenshot_seed.py &&
+             wget -O screenshot_reset_scheduler.py https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/screenshot_reset_scheduler.py &&
              python screenshot_reset_scheduler.py"
     depends_on:
       - screenshot-app

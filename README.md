@@ -74,7 +74,7 @@ mkdir youth-checkin && cd youth-checkin
 mkdir -p data uploads
 
 # Download docker-compose.yml
-curl -O https://raw.githubusercontent.com/mrcrunchybeans/youth-secure-checkin/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/ponokwai/youth-secure-checkin/master/docker-compose.yml
 
 # Create .env file with your secrets
 echo "SECRET_KEY=$(openssl rand -hex 32)" > .env
@@ -109,7 +109,7 @@ For development or custom deployments:
 
 2. **Clone and setup**
    ```bash
-   git clone https://github.com/mrcrunchybeans/youth-secure-checkin.git
+   git clone https://github.com/ponokwai/youth-secure-checkin.git
    cd youth-secure-checkin
    python -m venv venv
    venv\Scripts\activate  # Windows
@@ -264,9 +264,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 💬 Support
 
-- **Issues**: [GitHub Issues](https://github.com/mrcrunchybeans/youth-secure-checkin/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/mrcrunchybeans/youth-secure-checkin/discussions)
-- **Docker Hub**: [mrcrunchybeans/youth-secure-checkin](https://hub.docker.com/r/mrcrunchybeans/youth-secure-checkin)
+- **Issues**: [GitHub Issues](https://github.com/ponokwai/youth-secure-checkin/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ponokwai/youth-secure-checkin/discussions)
+- **Docker Hub**: [ponokwai/youth-secure-checkin](https://hub.docker.com/r/ponokwai/youth-secure-checkin)
 
 ## 🔐 Security
 

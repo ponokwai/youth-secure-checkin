@@ -72,11 +72,11 @@ sudo apt install python3.11 python3.11-venv python3-pip
 
 ```bash
 # Using HTTPS
-git clone https://github.com/mrcrunchybeans/youth-secure-checkin.git
+git clone https://github.com/ponokwai/youth-secure-checkin.git
 cd youth-secure-checkin
 
 # Using SSH (if you have SSH keys configured)
-git clone git@github.com:mrcrunchybeans/youth-secure-checkin.git
+git clone git@github.com:ponokwai/youth-secure-checkin.git
 cd youth-secure-checkin
 ```
 
@@ -909,7 +909,7 @@ sudo apt install python3.11 python3.11-venv nginx
 sudo useradd -m -s /bin/bash youthcheckin
 
 # 4. Clone repository
-sudo -u youthcheckin git clone https://github.com/mrcrunchybeans/youth-secure-checkin.git /home/youthcheckin/app
+sudo -u youthcheckin git clone https://github.com/ponokwai/youth-secure-checkin.git /home/youthcheckin/app
 
 # 5. Setup application
 cd /home/youthcheckin/app
@@ -1412,8 +1412,8 @@ sudo tail -f /var/log/nginx/error.log
 - [SQLite Documentation](https://www.sqlite.org/docs.html)
 
 ### Community
-- [GitHub Discussions](https://github.com/mrcrunchybeans/youth-secure-checkin/discussions)
-- [Issue Tracker](https://github.com/mrcrunchybeans/youth-secure-checkin/issues)
+- [GitHub Discussions](https://github.com/ponokwai/youth-secure-checkin/discussions)
+- [Issue Tracker](https://github.com/ponokwai/youth-secure-checkin/issues)
 - [FAQ](FAQ.md)
 
 ### Contributing

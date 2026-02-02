@@ -185,7 +185,7 @@ docker-compose pull
 docker-compose up -d
 
 # Check for vulnerabilities
-docker scan mrcrunchybeans/youth-secure-checkin:latest
+docker scan ponokwai/youth-secure-checkin:latest
 ```
 
 **System Updates:**
@@ -357,7 +357,7 @@ docker-compose up -d
 **Found a vulnerability?**
 
 - 🚨 **DO NOT** open public GitHub issues
-- ✅ **DO** use [GitHub Security Advisories](https://github.com/mrcrunchybeans/youth-secure-checkin/security/advisories/new)
+- ✅ **DO** use [GitHub Security Advisories](https://github.com/ponokwai/youth-secure-checkin/security/advisories/new)
 - ✅ **DO** provide detailed reproduction steps
 - ✅ **DO** allow time for patching before disclosure
 

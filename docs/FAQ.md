@@ -254,10 +254,10 @@ SQLite has limited concurrent write support. This usually means:
 ## Feature Requests & Support
 
 ### How do I request a new feature?
-Open an issue on [GitHub Issues](https://github.com/mrcrunchybeans/youth-secure-checkin/issues) with the "enhancement" label.
+Open an issue on [GitHub Issues](https://github.com/ponokwai/youth-secure-checkin/issues) with the "enhancement" label.
 
 ### I found a bug, where do I report it?
-Open an issue on [GitHub Issues](https://github.com/mrcrunchybeans/youth-secure-checkin/issues) with:
+Open an issue on [GitHub Issues](https://github.com/ponokwai/youth-secure-checkin/issues) with:
 - Description of the bug
 - Steps to reproduce
 - Expected vs actual behavior
@@ -273,7 +273,7 @@ See the [Contributing](../README.md#-contributing) section in the README. We wel
 - Testing and feedback
 
 ### Is there a user community?
-Join the discussion on [GitHub Discussions](https://github.com/mrcrunchybeans/youth-secure-checkin/discussions) to:
+Join the discussion on [GitHub Discussions](https://github.com/ponokwai/youth-secure-checkin/discussions) to:
 - Ask questions
 - Share tips and tricks
 - Show your customizations
@@ -315,4 +315,4 @@ All data is stored locally in your SQLite database (`checkin.db`). No data is se
 
 ---
 
-**Still have questions?** Ask on [GitHub Discussions](https://github.com/mrcrunchybeans/youth-secure-checkin/discussions)!
+**Still have questions?** Ask on [GitHub Discussions](https://github.com/ponokwai/youth-secure-checkin/discussions)!

@@ -1170,6 +1170,166 @@ def search_name():
     return jsonify({'families': results})
 
 
+@app.route('/checkout-page')
+@require_auth
+def checkout_page():
+    """Dedicated checkout page with all checked-in children displayed, with search to filter"""
+    event_id = request.args.get('event_id')
+    if not event_id:
+        # Redirect to select event
+        conn = get_db()
+        months = get_event_date_range_months()
+        cur = conn.execute(f"""
+            SELECT id, name FROM events
+            WHERE start_time >= datetime('now', '-{months} month') AND start_time <= datetime('now', '+{months} month')
+            ORDER BY ABS(strftime('%s', start_time) - strftime('%s', 'now')) ASC
+            LIMIT 1
+        """)
+        default_event = cur.fetchone()
+        conn.close()
+        if default_event:
+            return redirect(url_for('checkout_page', event_id=default_event['id']))
+        else:
+            flash('No events available. Please add events in admin.', 'warning')
+            return redirect(url_for('admin_index'))
+
+    conn = get_db()
+    
+    # Get all checked-in children for this event
+    cur = conn.execute("""
+        SELECT DISTINCT k.id as kid_id, k.name as kid_name, k.notes as kid_notes,
+               f.id as family_id, f.phone, f.authorized_adults,
+               a.name as adult_name, c.checkin_time, c.checkout_code, c.id as checkin_id
+        FROM kids k
+        JOIN checkins c ON c.kid_id = k.id
+        JOIN families f ON k.family_id = f.id
+        JOIN adults a ON c.adult_id = a.id
+        WHERE c.event_id = ? 
+          AND c.checkout_time IS NULL
+        ORDER BY k.name
+    """, (event_id,))
+    checked_in_children = cur.fetchall()
+    
+    # Convert to list of dicts and format times
+    children = []
+    for row in checked_in_children:
+        dt = datetime.fromisoformat(row['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        formatted_time = dt.strftime('%b %d %I:%M %p')
+        
+        children.append({
+            'kid_id': row['kid_id'],
+            'kid_name': row['kid_name'],
+            'kid_notes': row['kid_notes'] or '',
+            'family_id': row['family_id'],
+            'phone': row['phone'] or '',
+            'authorized_adults': row['authorized_adults'] or '',
+            'adult_name': row['adult_name'],
+            'checkin_time': row['checkin_time'],
+            'formatted_time': formatted_time,
+            'checkout_code': row['checkout_code'] or '',
+            'checkin_id': row['checkin_id']
+        })
+    
+    # Get all events for dropdown
+    months = get_event_date_range_months()
+    cur2 = conn.execute(f"SELECT id, name, start_time FROM events WHERE start_time >= datetime('now', '-{months} month') AND start_time <= datetime('now', '+{months} month') ORDER BY start_time DESC")
+    events = cur2.fetchall()
+    
+    # Get require_codes setting
+    setting = conn.execute("SELECT value FROM settings WHERE key = 'require_checkout_code'").fetchone()
+    require_codes = setting and setting[0] == 'true'
+    
+    conn.close()
+
+    # Check if TLC is configured (for UI button)
+    tlc_configured = 'tlc_email' in session and 'tlc_password' in session
+
+    return render_template('checkout.html', events=events, current_event_id=int(event_id), require_codes=require_codes, tlc_configured=tlc_configured, checked_in_children=children)
+
+
+@app.route('/search_checked_in', methods=['POST'])
+@require_auth
+def search_checked_in():
+    """Search for checked-in children by name or phone number (last 4 digits)"""
+    query = request.form.get('query', '').strip()
+    event_id = request.form.get('event_id')
+    
+    if not query:
+        return jsonify({'error': 'Search query required'}), 400
+    
+    if not event_id:
+        return jsonify({'error': 'Event ID required'}), 400
+    
+    conn = get_db()
+    
+    # Detect if query is numeric (phone search) or text (name search)
+    is_phone_search = query.isdigit()
+    
+    if is_phone_search:
+        # Phone search - search for families/adults where phone ends with digits AND kids are checked in
+        likeparam = f"%{query}"
+        cur = conn.execute("""
+            SELECT DISTINCT k.id as kid_id, k.name as kid_name, k.notes as kid_notes,
+                   f.id as family_id, f.phone, f.authorized_adults,
+                   a.name as adult_name, c.checkin_time, c.checkout_code, c.id as checkin_id
+            FROM kids k
+            JOIN checkins c ON c.kid_id = k.id
+            JOIN families f ON k.family_id = f.id
+            JOIN adults a ON c.adult_id = a.id
+            LEFT JOIN adults auth_adults ON auth_adults.family_id = f.id
+            WHERE c.event_id = ? 
+              AND c.checkout_time IS NULL
+              AND (REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(f.phone, '-', ''), ' ', ''), '(', ''), ')', ''), '.', '') LIKE ?
+                   OR REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(auth_adults.phone, '-', ''), ' ', ''), '(', ''), ')', ''), '.', '') LIKE ?)
+            ORDER BY k.name
+        """, (event_id, likeparam, likeparam))
+    else:
+        # Name search - search kids/adults by name (partial match) WHERE checked in
+        likeparam = f"%{query}%"
+        cur = conn.execute("""
+            SELECT DISTINCT k.id as kid_id, k.name as kid_name, k.notes as kid_notes,
+                   f.id as family_id, f.phone, f.authorized_adults,
+                   a.name as adult_name, c.checkin_time, c.checkout_code, c.id as checkin_id
+            FROM kids k
+            JOIN checkins c ON c.kid_id = k.id
+            JOIN families f ON k.family_id = f.id
+            JOIN adults a ON c.adult_id = a.id
+            WHERE c.event_id = ? 
+              AND c.checkout_time IS NULL
+              AND k.name LIKE ? COLLATE NOCASE
+            ORDER BY k.name
+            LIMIT 50
+        """, (event_id, likeparam))
+    
+    results = cur.fetchall()
+    conn.close()
+    
+    if not results:
+        return jsonify({'children': []})
+    
+    # Convert to list of dicts and format times
+    children = []
+    for row in results:
+        dt = datetime.fromisoformat(row['checkin_time']).replace(tzinfo=pytz.UTC).astimezone(local_tz)
+        formatted_time = dt.strftime('%b %d %I:%M %p')
+        
+        children.append({
+            'kid_id': row['kid_id'],
+            'kid_name': row['kid_name'],
+            'kid_notes': row['kid_notes'] or '',
+            'family_id': row['family_id'],
+            'phone': row['phone'] or '',
+            'authorized_adults': row['authorized_adults'] or '',
+            'adult_name': row['adult_name'],
+            'checkin_time': row['checkin_time'],
+            'formatted_time': formatted_time,
+            'checkout_code': row['checkout_code'] or '',
+            'checkin_id': row['checkin_id']
+        })
+    
+    return jsonify({'children': children})
+
+
 @app.route('/admin/backup_db')
 @require_auth
 def admin_backup_db():
@@ -3974,4 +4134,18 @@ def admin_tlc_autosync(local_event_id):
         return redirect(url_for('admin_tlc'))
 
 
-
+if __name__ == '__main__':
+    # Initialize database on startup
+    ensure_db()
+    
+    # Get configuration from environment variables
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    port = int(os.getenv('PORT', 5001))
+    host = os.getenv('HOST', '0.0.0.0')
+    
+    # Start the Flask development server
+    print(f"Starting Flask application on {host}:{port}")
+    print(f"Debug mode: {debug_mode}")
+    print(f"Access the application at: http://localhost:{port}")
+    
+    app.run(host=host, port=port, debug=debug_mode)

@@ -13,7 +13,7 @@
 services:
   # Production web service
   web:
-    image: mrcrunchybeans/youth-secure-checkin:latest
+    image: ponokwai/youth-secure-checkin:latest
     platform: linux/amd64
     container_name: youth-checkin
     ports:
@@ -32,7 +32,7 @@ services:
 
   # Demo web service
   demo-app:
-    image: mrcrunchybeans/youth-secure-checkin:latest
+    image: ponokwai/youth-secure-checkin:latest
     platform: linux/amd64
     container_name: youth-checkin-demo
     ports:
@@ -62,7 +62,7 @@ services:
 
   # Demo auto-reset service
   demo-reset:
-    image: mrcrunchybeans/youth-secure-checkin:latest
+    image: ponokwai/youth-secure-checkin:latest
     platform: linux/amd64
     container_name: youth-checkin-demo-reset
     environment:
